@@ -24,10 +24,16 @@ jobs:
         with:
           path: AssettoServer/WeatherControlPlugin
 
-      - name: .NET 9 kur
+      - name: .NET SDK kur
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: AssettoServer global.json sil (SDK 11.0.0 istiyor, yuklu degil)
+        shell: pwsh
+        run: Remove-Item AssettoServer/global.json -ErrorAction SilentlyContinue
 
       - name: Derle
         working-directory: AssettoServer/WeatherControlPlugin
