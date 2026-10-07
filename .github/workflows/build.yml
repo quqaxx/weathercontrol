@@ -24,12 +24,11 @@ jobs:
         with:
           path: AssettoServer/WeatherControlPlugin
 
-      - name: .NET SDK kur
+      - name: .NET 11 SDK kur
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            9.0.x
-            10.0.x
+          dotnet-version: 11.0.x
+          dotnet-quality: preview
 
       - name: AssettoServer global.json sil (SDK 11.0.0 istiyor, yuklu degil)
         shell: pwsh
