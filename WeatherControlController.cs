@@ -1,6 +1,5 @@
 using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
+using System.Net;
 using AssettoServer.Server.Weather;
 using AssettoServer.Shared.Weather;
 using Microsoft.AspNetCore.Mvc;
@@ -29,19 +28,23 @@ public class WeatherControlController : ControllerBase
         _config = config;
     }
 
+    // Anahtar yok: sadece sunucunun KENDI makinesinden gelen istekler kabul edilir
+    // (panel ayni bilgisayarda calisir). Internetten/LAN'dan gelen istekler reddedilir.
     private bool Authorized()
     {
-        if (string.IsNullOrEmpty(_config.ApiKey)) return false;
-        var given = Request.Headers["X-Api-Key"].ToString();
-        var a = Encoding.UTF8.GetBytes(given);
-        var b = Encoding.UTF8.GetBytes(_config.ApiKey);
-        return a.Length == b.Length && CryptographicOperations.FixedTimeEquals(a, b);
+        var remote = HttpContext.Connection.RemoteIpAddress;
+        if (remote == null) return false;
+        if (remote.IsIPv4MappedToIPv6) remote = remote.MapToIPv4();
+        if (IPAddress.IsLoopback(remote)) return true;
+        var local = HttpContext.Connection.LocalIpAddress;
+        if (local != null && local.IsIPv4MappedToIPv6) local = local.MapToIPv4();
+        return local != null && remote.Equals(local);
     }
 
     [HttpGet("/wcontrol/state")]
     public IActionResult State()
     {
-        if (!Authorized()) return Unauthorized(new { error = "Gecersiz API anahtari." });
+        if (!Authorized()) return Unauthorized(new { error = "Bu istek sadece sunucunun kendi bilgisayarindan yapilabilir." });
         var w = _weatherManager.CurrentWeather;
         return Ok(new
         {
@@ -53,7 +56,7 @@ public class WeatherControlController : ControllerBase
     [HttpPost("/wcontrol/apply")]
     public IActionResult Apply([FromBody] ApplyRequest req)
     {
-        if (!Authorized()) return Unauthorized(new { error = "Gecersiz API anahtari." });
+        if (!Authorized()) return Unauthorized(new { error = "Bu istek sadece sunucunun kendi bilgisayarindan yapilabilir." });
 
         // Once dogrula, sonra uygula: hata varsa hicbir sey degismesin.
         int? seconds = null;
